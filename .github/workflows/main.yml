@@ -1,55 +1,65 @@
 
-name: OIDC Debug
+name: Terraform Deploy
 
 on:
   workflow_dispatch:
+    inputs:
+      action:
+        description: "Choose Terraform action"
+        required: true
+        type: choice
+        default: apply
+        options:
+          - apply
+          - destroy
 
 permissions:
   id-token: write
   contents: read
 
 jobs:
-  debug:
+  terraform:
+    name: Terraform
     runs-on: ubuntu-latest
 
     steps:
+
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Get OIDC Token
-        uses: actions/github-script@v7
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          script: |
-            const token = await core.getIDToken('sts.amazonaws.com');
+          role-to-assume: arn:aws:iam::364410975057:role/oidc
+          aws-region: eu-north-1
+          role-session-name: GitHubActions
 
-            const payload = JSON.parse(
-              Buffer.from(token.split('.')[1], 'base64url').toString()
-            );
+      - name: Verify AWS Identity
+        run: |
+          aws sts get-caller-identity
 
-            console.log("========== OIDC INFORMATION ==========");
-            console.log("Issuer:");
-            console.log(payload.iss);
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
 
-            console.log("Audience:");
-            console.log(payload.aud);
+      - name: Terraform Init
+        run: |
+          terraform init
 
-            console.log("Subject:");
-            console.log(payload.sub);
+      - name: Terraform Validate
+        run: |
+          terraform validate
 
-            console.log("Repository:");
-            console.log(payload.repository);
+      - name: Terraform Plan
+        if: inputs.action == 'apply'
+        run: |
+          terraform plan
 
-            console.log("Repository ID:");
-            console.log(payload.repository_id);
+      - name: Terraform Apply
+        if: inputs.action == 'apply'
+        run: |
+          terraform apply -auto-approve
 
-            console.log("Repository Owner:");
-            console.log(payload.repository_owner);
-
-            console.log("Repository Owner ID:");
-            console.log(payload.repository_owner_id);
-
-            console.log("Ref:");
-            console.log(payload.ref);
-
-            console.log("======================================");
-
+      - name: Terraform Destroy
+        if: inputs.action == 'destroy'
+        run: |
+          terraform destroy -auto-approve
