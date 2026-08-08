@@ -1,4 +1,4 @@
-```yaml
+
 name: Terraform Deploy
 
 on:
@@ -99,4 +99,4 @@ jobs:
           TF_VAR_allowed_ssh_cidr: 49.37.134.2/32
         run: |
           terraform destroy -auto-approve
-```
+
