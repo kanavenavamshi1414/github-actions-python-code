@@ -1,4 +1,4 @@
-```yaml
+
 name: OIDC Debug
 
 on:
@@ -52,4 +52,4 @@ jobs:
             console.log(payload.ref);
 
             console.log("======================================");
-```
+
