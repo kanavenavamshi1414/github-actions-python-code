@@ -1,88 +1,55 @@
-
-name: Terraform Deploy
+```yaml
+name: OIDC Debug
 
 on:
   workflow_dispatch:
-    inputs:
-      action:
-        description: "Choose Terraform action"
-        required: true
-        default: apply
-        type: choice
-        options:
-          - apply
-          - destroy
 
 permissions:
   id-token: write
   contents: read
 
 jobs:
-  terraform:
-    name: Terraform
+  debug:
     runs-on: ubuntu-latest
 
     steps:
-
-      # -----------------------------
-      # Checkout
-      # -----------------------------
       - name: Checkout
         uses: actions/checkout@v4
 
-      # -----------------------------
-      # Configure AWS OIDC
-      # -----------------------------
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Get OIDC Token
+        uses: actions/github-script@v7
         with:
-          role-to-assume: arn:aws:iam::364410975057:role/oidc
-          aws-region: eu-north-1
-          role-session-name: GitHubActions
+          script: |
+            const token = await core.getIDToken('sts.amazonaws.com');
 
-      # -----------------------------
-      # Verify AWS
-      # -----------------------------
-      - name: Verify AWS Identity
-        run: |
-          aws sts get-caller-identity
+            const payload = JSON.parse(
+              Buffer.from(token.split('.')[1], 'base64url').toString()
+            );
 
-      # -----------------------------
-      # Setup Terraform
-      # -----------------------------
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+            console.log("========== OIDC INFORMATION ==========");
+            console.log("Issuer:");
+            console.log(payload.iss);
 
-      # -----------------------------
-      # Terraform Init
-      # -----------------------------
-      - name: Terraform Init
-        run: terraform init
+            console.log("Audience:");
+            console.log(payload.aud);
 
-      # -----------------------------
-      # Terraform Validate
-      # -----------------------------
-      - name: Terraform Validate
-        run: terraform validate
+            console.log("Subject:");
+            console.log(payload.sub);
 
-      # -----------------------------
-      # Terraform Plan
-      # -----------------------------
-      - name: Terraform Plan
-        if: github.event.inputs.action == 'apply'
-        run: terraform plan
+            console.log("Repository:");
+            console.log(payload.repository);
 
-      # -----------------------------
-      # Terraform Apply
-      # -----------------------------
-      - name: Terraform Apply
-        if: github.event.inputs.action == 'apply'
-        run: terraform apply -auto-approve
+            console.log("Repository ID:");
+            console.log(payload.repository_id);
 
-      # -----------------------------
-      # Terraform Destroy
-      # -----------------------------
-      - name: Terraform Destroy
-        if: github.event.inputs.action == 'destroy'
-        run: terraform destroy -auto-approve
+            console.log("Repository Owner:");
+            console.log(payload.repository_owner);
 
+            console.log("Repository Owner ID:");
+            console.log(payload.repository_owner_id);
+
+            console.log("Ref:");
+            console.log(payload.ref);
+
+            console.log("======================================");
+```
