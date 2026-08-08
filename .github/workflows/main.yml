@@ -1,48 +1,88 @@
-name: Terraform and Python Deployment
+```yaml
+name: Terraform Deploy
 
 on:
-  push:
-    branches:
-      - main
-
   workflow_dispatch:
+    inputs:
+      action:
+        description: "Choose Terraform action"
+        required: true
+        default: apply
+        type: choice
+        options:
+          - apply
+          - destroy
 
 permissions:
   id-token: write
   contents: read
 
 jobs:
-
   terraform:
     name: Terraform
     runs-on: ubuntu-latest
 
     steps:
 
+      # -----------------------------
+      # Checkout
+      # -----------------------------
       - name: Checkout
         uses: actions/checkout@v4
 
+      # -----------------------------
+      # Configure AWS OIDC
+      # -----------------------------
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::364410975057:role/github-actions-python-code
+          role-to-assume: arn:aws:iam::364410975057:role/oidc
           aws-region: eu-north-1
+          role-session-name: GitHubActions
 
-      - name: Verify AWS
+      # -----------------------------
+      # Verify AWS
+      # -----------------------------
+      - name: Verify AWS Identity
         run: |
           aws sts get-caller-identity
 
+      # -----------------------------
+      # Setup Terraform
+      # -----------------------------
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
+      # -----------------------------
+      # Terraform Init
+      # -----------------------------
       - name: Terraform Init
         run: terraform init
 
+      # -----------------------------
+      # Terraform Validate
+      # -----------------------------
       - name: Terraform Validate
         run: terraform validate
 
+      # -----------------------------
+      # Terraform Plan
+      # -----------------------------
       - name: Terraform Plan
+        if: github.event.inputs.action == 'apply'
         run: terraform plan
 
+      # -----------------------------
+      # Terraform Apply
+      # -----------------------------
       - name: Terraform Apply
+        if: github.event.inputs.action == 'apply'
         run: terraform apply -auto-approve
+
+      # -----------------------------
+      # Terraform Destroy
+      # -----------------------------
+      - name: Terraform Destroy
+        if: github.event.inputs.action == 'destroy'
+        run: terraform destroy -auto-approve
+```
