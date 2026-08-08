@@ -1,3 +1,4 @@
+```yaml
 name: Terraform Deploy
 
 on:
@@ -23,9 +24,12 @@ jobs:
 
     steps:
 
+      # Checkout Repository
       - name: Checkout
         uses: actions/checkout@v4
 
+
+      # Configure AWS using GitHub OIDC
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -33,21 +37,32 @@ jobs:
           aws-region: eu-north-1
           role-session-name: GitHubActions
 
+
+      # Verify AWS Authentication
       - name: Verify AWS Identity
         run: |
           aws sts get-caller-identity
 
+
+      # Setup Terraform
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
+
+      # Terraform Init
+      # Uses backend.tf and S3 state
       - name: Terraform Init
         run: |
           terraform init
 
+
+      # Terraform Validate
       - name: Terraform Validate
         run: |
           terraform validate
 
+
+      # Terraform Plan
       - name: Terraform Plan
         if: inputs.action == 'apply'
         env:
@@ -59,6 +74,8 @@ jobs:
         run: |
           terraform plan
 
+
+      # Terraform Apply
       - name: Terraform Apply
         if: inputs.action == 'apply'
         env:
@@ -70,6 +87,8 @@ jobs:
         run: |
           terraform apply -auto-approve
 
+
+      # Terraform Destroy
       - name: Terraform Destroy
         if: inputs.action == 'destroy'
         env:
@@ -80,4 +99,4 @@ jobs:
           TF_VAR_allowed_ssh_cidr: 49.37.134.2/32
         run: |
           terraform destroy -auto-approve
-
+```
